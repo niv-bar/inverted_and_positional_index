@@ -27,7 +27,7 @@ project/
 ├── data/
 │   ├── docs/              # AP document collection
 │   └── BooleanQueries.txt
-└── script.py              # Main code
+└── inverted_index.py              # Main code
 ```
 
 ---
