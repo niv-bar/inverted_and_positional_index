@@ -1,18 +1,184 @@
+# Libraries
 import os
 import re
-from collections import Counter
+import random
+from typing import Optional
+
+class BooleanRetrieval:
+    """
+    Boolean retrieval model supporting AND, OR, and AND-NOT operations (Part 2)
+    Complexity: O(N+M)
+    """
+    def __init__(self):
+        pass
+
+    # AND
+    @staticmethod
+    def __intersect(l1_ids: list[int], l2_ids: list[int]) -> list[int]:
+        """Return intersection (AND) of two sorted posting lists."""
+        intersection = []
+        i = j = 0
+
+        while i < len(l1_ids) and j < len(l2_ids):
+            if l1_ids[i] == l2_ids[j]:
+                intersection.append(l1_ids[i])
+                i += 1
+                j += 1
+
+            elif l1_ids[i] < l2_ids[j]:
+                i += 1
+
+            else:
+                j += 1
+
+        return intersection
+
+    # OR
+    @staticmethod
+    def __union(l1_ids: list[int], l2_ids: list[int]) -> list[int]:
+        """Return union (OR) of two sorted posting lists."""
+        union_result = []
+        i = j = 0
+
+        while i < len(l1_ids) and j < len(l2_ids):
+
+            if l1_ids[i] == l2_ids[j]:
+                union_result.append(l1_ids[i])
+                i += 1
+                j += 1
+
+            elif l1_ids[i] < l2_ids[j]:
+                union_result.append(l1_ids[i])
+                i += 1
+
+            else:
+                union_result.append(l2_ids[j])
+                j += 1
+
+        # Append remaining elements
+        while i < len(l1_ids):
+            union_result.append(l1_ids[i])
+            i += 1
+
+        while j < len(l2_ids):
+            union_result.append(l2_ids[j])
+            j += 1
+
+        return union_result
+
+    # AND NOT
+    @staticmethod
+    def __difference(l1_ids: list[int], l2_ids: list[int]) -> list[int]:
+        """Return difference (r1 AND NOT r2) between two sorted posting lists."""
+        difference_result = []
+        i = j = 0
+
+        while i < len(l1_ids) and j < len(l2_ids):
+            if l1_ids[i] == l2_ids[j]:
+                i += 1
+                j += 1
+
+            elif l1_ids[i] < l2_ids[j]:
+                difference_result.append(l1_ids[i])
+                i += 1
+
+            else:
+                j += 1
+
+        # Append remaining elements in l1
+        while i < len(l1_ids):
+            difference_result.append(l1_ids[i])
+            i += 1
+
+        return difference_result
+
+    def retrieve(
+        self,
+        inverted_index: dict[str, list[int]],
+        doc_map: dict[int, str],
+        query_file_path: str = "data/BooleanQueries.txt",
+        output_file_path: str = "Part_2.txt"
+    ) -> None:
+        """Evaluate Boolean RPN queries and write matching document IDs to file."""
+
+        operators = {"AND", "OR", "NOT"} # Allowed Boolean operators
+
+        # Open file (Part_2) for writing
+        with open(output_file_path, "w", encoding="utf-8") as out_f:
+
+            # Open queries file
+            with open(query_file_path, "r", encoding="utf-8") as in_f:
+                # Break into lines
+                lines = [line.strip() for line in in_f]
+
+            # Iterate each line
+            for line in lines:
+                # Skip empty lines
+                if not line:
+                    continue
+
+                # Tokenize the current query
+                tokens = line.split()
+                # New stack for each query
+                stack = []
+
+                # Iterate each token in the query
+                for token in tokens:
+                    # if token is a term
+                    if token not in operators:
+                        # get the posting list of the relevant term and append it to the stack
+                        postings_ids = inverted_index.get(token, [])
+                        stack.append(postings_ids)
+
+                    # if token is an operator
+                    else:
+                        # Retrieve the posting lists in reverse order
+                        # Right operand
+                        r2 = stack.pop()
+                        # Left Operand
+                        r1 = stack.pop()
+
+                        result = []
+                        # Apply the required operator logic
+                        # AND
+                        if token == "AND":
+                            result = self.__intersect(r1, r2)
+                        # OR
+                        elif token == "OR":
+                            result = self.__union(r1, r2)
+                        # r1 AND NOT r2
+                        elif token == "NOT":
+                            result = self.__difference(r1, r2)
+
+                        # Push the result list into the stack
+                        stack.append(result)
+
+                # Retrieve the final result list
+                final_internal_ids = stack.pop()
+
+                # Convert internal_ids into original_ids
+                original_ids = [doc_map[internal_id] for internal_id in final_internal_ids]
+
+                # Write a line in the open file (a single query)
+                output_line = " ".join(original_ids)
+                out_f.write(output_line + "\n")
 
 
 class InvertedIndex:
     def __init__(self):
-        # {'unique_term': [(internal_id, term_frequency)], ...}
-        self._inverted_index = {}
-        # {'internal_doc_id_1': original_doc_id,...}
-        self._doc_id_map = {}
+        """Inverted index storing term -> posting list and ID mappings."""
+        # {'unique_term': [internal_id_1, internal_id_5,...], ...}
+        self._inverted_index: dict[str, list[int]] = {}
+        # {internal_doc_id_1: original_doc_id,...}
+        self._doc_id_map: dict[int, str] = {}
         # counter for internal_id
-        self._next_internal_doc_id = 1
+        self._next_internal_doc_id: int = 1
+        # A dict to store the frequency for each term - {'term': doc_frequency, ...}
+        self._docs_frequency: dict[str, int] = {}
 
-    def build_index(self, data_dir: str = "data/docs"):
+    def build_index(self, data_dir: str = "data/docs") -> None:
+        """Build inverted index from AP data directory."""
+
         doc_pattern = re.compile(r"<DOC>(.*?)</DOC>", re.DOTALL)
         doc_id_pattern = re.compile(r"<DOCNO>\s*(.*?)\s*</DOCNO>", re.DOTALL)
         text_pattern = re.compile(r"<TEXT>\s*(.*?)\s*</TEXT>", re.DOTALL)
@@ -38,204 +204,125 @@ class InvertedIndex:
                         continue
 
                     internal_id = self.__update_doc_id_map(doc_id)
-                    frequency = self.__tokenize_and_count(text)
-                    self.__update_inverted_index(frequency, internal_id)
+                    tokens = self.__tokenize(text)
+                    self.__update_inverted_index(tokens, internal_id)
 
-    def __update_doc_id_map(self, original_doc_id):
+    def __update_doc_id_map(self, original_doc_id: Optional[str]) -> int:
+        """Map original AP doc ID to internal numeric ID."""
+        if original_doc_id is None:
+            raise ValueError("Missing <DOCNO> tag in document.")
+
         assigned_id = self._next_internal_doc_id
         self._doc_id_map[assigned_id] = original_doc_id
         self._next_internal_doc_id += 1
         return assigned_id
 
     @staticmethod
-    def __tokenize_and_count(text):
+    def __tokenize(text: str) -> list[str]:
+        """Tokenize text into alphanumeric terms."""
         if not text:
-            return Counter()
+            return []
+        return re.findall(r"\b\w+\b", text)
 
-        tokens = re.findall(r"\b\w+\b", text)
-        return Counter(tokens)
+    def __update_inverted_index(self, tokens: list[str], internal_id: int) -> None:
+        """Insert terms into inverted index and update posting lists."""
+        seen = set()
 
-    def __update_inverted_index(self, doc_frequencies, internal_id):
+        for term in tokens:
+            if term in seen:
+                continue # avoid duplicates inside the same document
+            seen.add(term)
 
-        for term, freq in doc_frequencies.items():
             if term in self._inverted_index:
-                self._inverted_index[term].append((internal_id, freq))
+                self._inverted_index[term].append(internal_id)
             else:
-                self._inverted_index[term] = [(internal_id, freq)]
+                self._inverted_index[term] = [internal_id]
 
-    def get_index(self):
+    def get_index(self) -> dict[str, list[int]]:
+        """Return the inverted index."""
         return self._inverted_index
 
-    def get_doc_id_map(self):
+    def get_doc_id_map(self) -> dict[int, str]:
+        """Return internal -> original document ID mapping."""
         return self._doc_id_map
 
-    #=== task 2 ====
-    # O(N+M)
-    # AND
-    @staticmethod
-    def __intersect(l1, l2):
-        intersection = []
-        i = j = 0
+    def sort_docs_frequency(self) -> None:
+        """Sort term dictionary by document frequency (descending)."""
+        for term, postings_list in self._inverted_index.items():
+            self._docs_frequency[term] = len(postings_list)
 
-        while i < len(l1) and j < len(l2):
-            if l1[i][0] == l2[j][0]:
-                intersection.append((l1[i][0]))
-                i += 1
-                j += 1
-            elif l1[i][0] < l2[j][0]:
-                i += 1
+        self._docs_frequency = dict(
+            sorted(self._docs_frequency.items(), key=lambda x: x[1], reverse=True)
+        )
+
+    def get_top_10_terms(self) -> list[tuple[str, int]]:
+        """Return the top 10 highest-frequency terms."""
+        return list(self._docs_frequency.items())[:10]
+
+    def get_lowest_10_terms(self) -> list[tuple[str, int]]:
+        """Return the lowest 10 frequency terms."""
+        return list(self._docs_frequency.items())[-10:]
+
+    def find_similar_terms(self) -> dict | None:
+        """Find two alphabetic terms sharing the same postings list."""
+        reversed_inverted_index = {}
+
+        # Step 1: Reverse the inverted index:
+        # Key = tuple(sorted doc_ids), Value = list of terms sharing this postings list
+        for term, postings_list in self._inverted_index.items():
+            postings_tuple = tuple(postings_list)  # lists not hashable -> use tuple
+
+            if postings_tuple not in reversed_inverted_index:
+                reversed_inverted_index[postings_tuple] = [term]
             else:
-                j += 1
+                reversed_inverted_index[postings_tuple].append(term)
 
-        return intersection
+        # Step 2: Look for a postings list that belongs to at least two different terms
+        for postings_tuple, terms in reversed_inverted_index.items():
+            # keep only alphabetic words (no pure numbers) - not necessary, doing that from the reason we want words terms
+            word_terms = [t for t in terms if t.isalpha()]
 
-    # OR
-    @staticmethod
-    def __union(l1, l2):
-        union_result = []
-        i = j = 0
+            # require: at least 2 valid words + more than 1 document (adjusting the threshold to 20 docs to have good representation)
+            if len(word_terms) >= 2 and len(postings_tuple) > 20:
+                # randomly pick 2 distinct terms
+                term1, term2 = random.sample(word_terms, 2)
 
-        while i < len(l1) and j < len(l2):
-            doc_id_l1 = l1[i][0]
-            doc_id_l2 = l2[j][0]
+                internal_ids = list(postings_tuple)
+                original_ids = [self._doc_id_map[i] for i in internal_ids]
 
-            if doc_id_l1 == doc_id_l2:
-                union_result.append((l1[i][0]))
-                i += 1
-                j += 1
+                return {
+                    "terms": (term1, term2),
+                    "internal_ids": internal_ids,
+                    "original_ids": original_ids
+                }
 
-            elif doc_id_l1 < doc_id_l2:
-                union_result.append((l1[i][0]))
-                i += 1
-
-            else:  # doc_id_l1 > doc_id_l2
-                union_result.append((l2[j][0]))
-                j += 1
-
-        if i < len(l1):
-            while i < len(l1):
-                union_result.append((l1[i][0]))
-                i += 1
-
-        if j < len(l2):
-            while j < len(l2):
-                union_result.append((l2[j][0]))
-                j += 1
-
-        return union_result
-
-    # AND NOT
-    @staticmethod
-    def __difference(l1, l2):
-        difference_result = []
-        i = j = 0
-
-        while i < len(l1) and j < len(l2):
-            doc_id_l1 = l1[i][0]
-            doc_id_l2 = l2[j][0]
-
-            if doc_id_l1 == doc_id_l2:
-                 i += 1
-                 j += 1
-
-            elif doc_id_l1 < doc_id_l2:
-                difference_result.append((l1[i][0]))
-                i += 1
-
-            else:  # doc_id_l1 > doc_id_l2
-                j += 1
-
-        if i < len(l1):
-            while i < len(l1):
-                difference_result.append((l1[i][0]))
-                i += 1
-
-        return difference_result
-
-    def retrieve(self, query_file_path="data/BooleanQueries.txt", output_file_path="Part_2.txt"):
-        """
-        קורא שאילתות RPN מקובץ, מעבד אותן, וממיר את התוצאות ל-Original IDs,
-        אותם הוא כותב לקובץ פלט.
-        """
-        # קבוצת האופרטורים המותרים
-        operators = {"AND", "OR", "NOT"}
-
-        # פותחים את קובץ הפלט לכתיבה
-        with open(output_file_path, "w", encoding="utf-8") as out_f:
-
-            # פותחים את קובץ השאילתות לקריאה
-            with open(query_file_path, "r", encoding="utf-8") as in_f:
-                lines = [line.strip() for line in in_f]
-
-            # 1. עוברים על כל שאילתה (שורה)
-            for line in lines:
-                if not line:  # מדלגים על שורות ריקות
-                    continue
-
-                tokens = line.split()  # פיצול השאילתה לאסימונים
-                stack = []  # 2. אתחול מחסנית חדשה לכל שאילתה
-
-                # 3. עוברים על כל אסימון בשאילתה
-                for token in tokens:
-
-                    if token not in operators:
-                        # 4. אם האסימון הוא מונח (Term)
-
-                        # נשלוף את רשימת הפרסומים (שמכילה זוגות של (id, tf))
-                        postings_with_tf = self._inverted_index.get(token, [])
-
-                        # נחלץ רק את ה-Internal IDs (האיבר הראשון ב-Tuple)
-                        postings_ids = [doc[0] for doc in postings_with_tf]
-
-                        # נדחוף את רשימת ה-IDs למחסנית
-                        stack.append(postings_ids)
-
-                    else:
-                        # 5. אם האסימון הוא אופרטור
-
-                        # שלוף את שני האופרנדים האחרונים (בסדר הפוך)
-                        R2 = stack.pop()  # אופרנד ימני (או הרשימה ל-NOT)
-                        R1 = stack.pop()  # אופרנד שמאלי
-
-                        result = []
-                        if token == "AND":
-                            result = self.__intersect(R1, R2)
-                        elif token == "OR":
-                            result = self.__union(R1, R2)
-                        elif token == "NOT":
-                            # כפי שנדרש: R1 AND NOT R2 (כלומר, R1 פחות R2)
-                            result = self.__difference(R1, R2)
-
-                        # דחוף את התוצאה חזרה למחסנית
-                        stack.append(result)
-
-                # 6. סיום עיבוד השאילתה
-                # התוצאה הסופית (רשימת Internal IDs) נמצאת בראש המחסנית
-                final_internal_ids = stack.pop()
-
-                # 7. המרת Internal IDs ל-Original IDs
-                original_ids = [self._doc_id_map[internal_id] for internal_id in final_internal_ids]
-
-                # 8. כתיבה לקובץ הפלט בפורמט הנדרש (רווחים בין המזהים)
-                output_line = " ".join(original_ids)
-                out_f.write(output_line + "\n")
-
-        print(f"עיבוד בוליאני הושלם. התוצאות נשמרו ב: {output_file_path}")
-
-
+        # If no pair found
+        return None
 
 
 if __name__ == "__main__":
+    # Build inverted index
     index = InvertedIndex()
-    # index.build_index()
-    # store = index.get_index()
-    #
-    # first_keys = list(store.keys())[:10]
-    # print(first_keys)
+    index.build_index()
 
-    index.retrieve()
+    # Retrieve data structures
+    revert_index = index.get_index()
+    doc_mapper = index.get_doc_id_map()
 
+    # Print first 10 terms for inspection
+    first_keys = list(revert_index.keys())[:10]
+    for key in first_keys:
+        values = revert_index[key]
+        print(key, values[:10])
 
+    # Boolean retrieval
+    bool_retrieval = BooleanRetrieval()
+    bool_retrieval.retrieve(revert_index, doc_mapper)
 
+    # Collection statistics
+    index.sort_docs_frequency()
+    print(index.get_top_10_terms())
+    print(index.get_lowest_10_terms())
 
-
+    # Similar term detection
+    print(index.find_similar_terms())
