@@ -1,0 +1,36 @@
+#1 The top 10 terms with the highest document frequency:
+
+[('the', 240681), ('of', 236384), ('a', 234128), ('in', 233907), ('and', 233333), ('to', 231859), ('said', 214229), ('for', 213595), ('on', 207079), ('that', 198482)]
+
+# ============================================================
+
+#2 The top 10 terms with the lowest document frequency:
+
+[('26841', 1), ('70956', 1), ('sivy', 1), ('7144', 1), ('27772', 1), ('yorktowne', 1), ('mifflingburg', 1), ('taiwanesemade', 1), ('selfinitiate', 1), ('laterformed', 1)]
+
+# ============================================================
+
+#3 The different characteristics of the above two sets of terms is that the top terms represents mainly words which known as "stop words".
+These are words that are grammatically essential but carry very little semantic meaning. They appear in most documents,
+which is why their document frequency is so high.
+On the other hand, in the lowest 10 terms frequency we can find the opposite: highly specific or rare terms, numbers, misspellings, etc.,
+that might only appear once or twice in the entire collection.
+
+# ============================================================
+
+#4 We identified the two terms “cityon” and “telecharges”, which have the same document frequency and appear
+in exactly the same documents. We found them by reversing the inverted index: instead of mapping each term
+to its postings list, I mapped each postings list to the terms that share it. Any postings list associated
+with two (as requested in the task) or more terms indicates terms that occur in the same documents. From one such group,
+We selected these two terms.
+
+Note 1: those 2 words seem to appear in different documents, but the texts are the same.
+We would expect to find terms which represents semantic similarity in the docs they appear.
+
+Note 2: Because numbers also generated here as terms, we exclude the numbers from the 2 terms searching, and in addition
+make a condition which requires from the selected 2 terms to appear in posting list which ith document frequency is bigger than 20,
+due to avoid low docs frequency such as 1.
+
+'terms': 'cityon', 'telecharges'
+'internal_ids': [218, 1806, 2042, 3067, 5077, 6109, 9760, 11817, 12517, 15014, 15270, 18348, 18608, 22553, 22837, 23843, 25428, 26369, 27544, 29086, 29822, 32950, 33446, 35937, 37881, 38888, 39991, 41130, 45696, 46055, 48097, 49884, 51917, 54208, 55248, 58332, 65635, 66452, 66771, 68182, 68725, 73416, 74025, 74346, 76962, 77259, 78992, 83067, 83396, 85031, 85440, 87543, 90138, 92351, 93769, 95079, 96135, 96637, 98573, 100925, 102555, 104585, 105581, 106539, 109099, 110429, 113322, 115642, 115839, 118428, 118992, 119809, 123012, 123533, 126170, 126638, 131660, 132999, 135479, 135890, 138448, 139886, 140837, 144606, 145180, 145471, 149439, 151647, 154971, 155931, 156234, 157933, 160670, 164773, 168102, 168575, 171062, 173431, 175085, 175549, 175822, 176130, 177322, 179366, 181360, 183630, 183911, 184201, 188553, 190620, 190905, 193053, 196068, 200474, 200770, 202186, 203377, 204872, 206342, 208067, 208497, 210594, 211897, 212154, 212409, 216525, 216860, 217117, 217949, 219492, 220495, 221851, 223416, 225620, 226080, 232068, 233046, 233777, 236398, 236799, 239479, 241463]
+'original_ids': ['AP900911-0219', 'AP901002-0192', 'AP900918-0192', 'AP901231-0176', 'AP901113-0125', 'AP901106-0195', 'AP900904-0184', 'AP901224-0162', 'AP901030-0170', 'AP901009-0223', 'AP901204-0191', 'AP901127-0174', 'AP901120-0202', 'AP901211-0196', 'AP901023-0223', 'AP901218-0201', 'AP891227-0162', 'AP900320-0172', 'AP900123-0219', 'AP891219-0176', 'AP900328-0178', 'AP900403-0203', 'AP900206-0189', 'AP900213-0192', 'AP900130-0220', 'AP900116-0207', 'AP900315-0068', 'AP891212-0189', 'AP900227-0209', 'AP900220-0202', 'AP900307-0204', 'AP900102-0185', 'AP880503-0232', 'AP880309-0354', 'AP880412-0233', 'AP880621-0282', 'AP880323-0247', 'AP880510-0253', 'AP880517-0239', 'AP880302-0266', 'AP880531-0265', 'AP880223-0230', 'AP880419-0233', 'AP880426-0258', 'AP880609-0251', 'AP880405-0237', 'AP880524-0271', 'AP880329-0231', 'AP880316-0282', 'AP900717-0182', 'AP900710-0187', 'AP900515-0225', 'AP900808-0190', 'AP900417-0194', 'AP900612-0217', 'AP900508-0216', 'AP900501-0187', 'AP900703-0195', 'AP900521-0205', 'AP900529-0210', 'AP900605-0184', 'AP900619-0202', 'AP900627-0197', 'AP900424-0194', 'AP900731-0203', 'AP880627-0227', 'AP880216-0198', 'AP891129-0237', 'AP900814-0133', 'AP890314-0227', 'AP890725-0239', 'AP891205-0187', 'AP881108-0232', 'AP900409-0206', 'AP900828-0157', 'AP900821-0185', 'AP880906-0189', 'AP880706-0273', 'AP880810-0282', 'AP880817-0278', 'AP880802-0248', 'AP880913-0227', 'AP880712-0246', 'AP881027-0229', 'AP881018-0229', 'AP881011-0229', 'AP880823-0197', 'AP880831-0240', 'AP881004-0222', 'AP880726-0206', 'AP880719-0261', 'AP880920-0238', 'AP891024-0226', 'AP890829-0195', 'AP891121-0215', 'AP891031-0225', 'AP890912-0226', 'AP890905-0182', 'AP891010-0208', 'AP891017-0214', 'AP890822-0204', 'AP891107-0258', 'AP890815-0208', 'AP890801-0213', 'AP891114-0217', 'AP891003-0206', 'AP890919-0205', 'AP890926-0229', 'AP890502-0237', 'AP890620-0210', 'AP890627-0217', 'AP890425-0232', 'AP890516-0215', 'AP890509-0226', 'AP890531-0246', 'AP890705-0180', 'AP890418-0258', 'AP890411-0189', 'AP890613-0198', 'AP890404-0204', 'AP890607-0213', 'AP890718-0223', 'AP890711-0205', 'AP890523-0200', 'AP890329-0207', 'AP881227-0190', 'AP881220-0209', 'AP890103-0202', 'AP890307-0210', 'AP890228-0195', 'AP890221-0247', 'AP881129-0213', 'AP881121-0230', 'AP890117-0223', 'AP890110-0237', 'AP881213-0230', 'AP890131-0235', 'AP890214-0186', 'AP890206-0219', 'AP881115-0204', 'AP890125-0251', 'AP881206-0214']
